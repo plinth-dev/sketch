@@ -1,0 +1,42 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: ["18", "20", "22"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Run tests
+        run: npm test
+
+      - name: Smoke — render the canonical examples
+        run: |
+          set -euo pipefail
+          node bin/plinth-sketch.js examples/plinth.sketch --check
+          node bin/plinth-sketch.js examples/three-tier.sketch --check
+          node bin/plinth-sketch.js examples/plinth.sketch -o /tmp/plinth.svg
+          test -s /tmp/plinth.svg
+          # Verify the rendered output begins with an <svg> tag and ends with </svg>
+          head -c 5 /tmp/plinth.svg | grep -q '<svg'
+          tail -c 6 /tmp/plinth.svg | grep -q '</svg>'
+
+      - name: Smoke — stdin → stdout pipeline
+        run: |
+          printf '@layer T\na : Alpha\nb : Beta\na -> b\n' | node bin/plinth-sketch.js - > /tmp/stdin.svg
+          test -s /tmp/stdin.svg
+          head -c 5 /tmp/stdin.svg | grep -q '<svg'
