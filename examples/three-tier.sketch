@@ -1,0 +1,27 @@
+# Three-tier web application · a generic example.
+# Edit, then re-render: plinth-sketch examples/three-tier.sketch
+
+@layer Client
+browser : Browser / SPA + traceparent
+
+@layer Edge
+cdn : CDN / TLS · cache
+gw  : API Gateway / OIDC · rate-limit
+
+@layer Application
+web : Web tier / Next.js · React 19
+api : API tier / Go · chi · pgx
+
+@layer Data
+db    : Postgres / OLTP
+redis : Redis / cache · queues
+s3    : Object storage / blobs
+
+browser -> cdn
+cdn -> gw : HTTP
+gw -> web
+gw -> api
+web -> api : SSR · forms
+api -> db
+api -> redis
+api -> s3

@@ -1,0 +1,17 @@
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated example outputs are checked in (they're examples)
+# but ad-hoc renders elsewhere should be ignored
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local test artefacts
+/tmp/
+*.tmp

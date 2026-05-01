@@ -1,0 +1,112 @@
+name: Plinth Sketch
+description: Render Plinth Sketch DSL files (`.sketch`) to typeset SVG diagrams. Drop the DSL in your repo, render at build time, embed the SVG in your README.
+author: Plinth (plinth.run)
+branding:
+  icon: pen-tool
+  color: blue
+
+inputs:
+  pattern:
+    description: Glob of .sketch files to render. Default matches the whole repo.
+    default: "**/*.sketch"
+    required: false
+  commit:
+    description: Whether to commit rendered SVGs back to the repo. "false" by default — pair with peter-evans/create-pull-request or write your own commit step.
+    default: "false"
+    required: false
+  commit-message:
+    description: Commit message (when commit=true).
+    default: "chore(sketch): re-render diagrams"
+    required: false
+  fail-on-warnings:
+    description: Exit non-zero if any .sketch file has parse errors or undefined-node references. Default false (warnings on stderr only).
+    default: "false"
+    required: false
+  signature:
+    description: Whether the rendered SVGs include the "Made with Plinth Sketch" cite at bottom-right. Default true.
+    default: "true"
+    required: false
+
+outputs:
+  rendered:
+    description: Newline-separated list of paths the action wrote.
+    value: ${{ steps.render.outputs.rendered }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Install plinth-sketch
+      shell: bash
+      run: npm install --no-save --prefix /tmp/plinth-sketch @plinth-dev/sketch@latest
+
+    - name: Render diagrams
+      id: render
+      shell: bash
+      env:
+        PATTERN: ${{ inputs.pattern }}
+        FAIL_ON_WARN: ${{ inputs.fail-on-warnings }}
+        SIGNATURE: ${{ inputs.signature }}
+      run: |
+        set -euo pipefail
+        SKETCH_BIN=/tmp/plinth-sketch/node_modules/.bin/plinth-sketch
+        rendered_paths=()
+        warned=0
+
+        # Glob the pattern. Use bash globstar so **/*.sketch works as expected.
+        shopt -s globstar nullglob
+        files=( $PATTERN )
+
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "::warning::no .sketch files matched pattern '$PATTERN'"
+          echo "rendered=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        for src in "${files[@]}"; do
+          out="${src%.sketch}.svg"
+          flag_args=()
+          if [ "$SIGNATURE" = "false" ]; then flag_args+=(--no-signature); fi
+
+          if "$SKETCH_BIN" "$src" -o "$out" "${flag_args[@]}" 2>render.stderr; then
+            rendered_paths+=( "$out" )
+          else
+            echo "::error file=$src::plinth-sketch failed for $src"
+            cat render.stderr
+            exit 1
+          fi
+          if [ -s render.stderr ]; then
+            warned=1
+            while IFS= read -r line; do
+              echo "::warning file=$src::$line"
+            done < render.stderr
+          fi
+        done
+
+        printf "rendered<<EOF\n%s\nEOF\n" "$(printf '%s\n' "${rendered_paths[@]}")" >> "$GITHUB_OUTPUT"
+
+        if [ "$FAIL_ON_WARN" = "true" ] && [ $warned -ne 0 ]; then
+          echo "::error::plinth-sketch: warnings present and fail-on-warnings=true"
+          exit 1
+        fi
+
+    - name: Commit rendered diagrams
+      if: inputs.commit == 'true'
+      shell: bash
+      env:
+        MSG: ${{ inputs.commit-message }}
+      run: |
+        set -euo pipefail
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -A '*.svg'
+        if git diff --cached --quiet; then
+          echo "plinth-sketch: no SVG changes to commit"
+          exit 0
+        fi
+        git commit -m "$MSG"
+        git push

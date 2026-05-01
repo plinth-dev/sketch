@@ -1,0 +1,34 @@
+# Plinth substrate · the diagram on plinth.run
+# Render: plinth-sketch examples/plinth.sketch
+
+@layer User module · example-access-requests
+web : starter-web / Next.js 16 · React 19
+api : starter-api / Go 1.25 · chi · pgx
+
+@layer SDK
+sdk-ts : sdk-ts · 7 packages / env · api-client · authz · forms · tables · …
+sdk-go : sdk-go · 7 packages / authz · audit · otel · errors · paginate · …
+
+@layer Substrate · Helm umbrella chart
+pg    : CloudNativePG / Postgres operator + cluster
+cerb  : Cerbos PDP / policy decisions · authz
+otel  : OpenTelemetry Collector / traces · metrics · logs
+
+@layer Foundation · Kubernetes
+k8s : Kubernetes / Any conformant distribution
+
+# Module wiring
+web -> api : HTTP · JSON
+web -> sdk-ts : imports
+api -> sdk-go : imports
+
+# SDK → substrate
+sdk-ts -> cerb
+sdk-go -> pg
+sdk-go -> cerb
+sdk-go -> otel
+
+# Substrate → foundation
+pg -> k8s
+cerb -> k8s
+otel -> k8s

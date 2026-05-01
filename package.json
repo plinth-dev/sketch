@@ -1,0 +1,49 @@
+{
+  "name": "@plinth-dev/sketch",
+  "version": "0.1.0",
+  "description": "Render Plinth Sketch DSL files to typeset SVG architecture diagrams. Drop the DSL in your repo, render at build time, embed the SVG in your README.",
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://plinth.run/tools/sketch/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plinth-dev/sketch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plinth-dev/sketch/issues"
+  },
+  "main": "./src/index.js",
+  "module": "./src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js"
+    }
+  },
+  "bin": {
+    "plinth-sketch": "./bin/plinth-sketch.js"
+  },
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "diagram",
+    "architecture",
+    "svg",
+    "dsl",
+    "documentation",
+    "plinth"
+  ],
+  "scripts": {
+    "test": "node --test test/parser.test.js test/layout.test.js test/render.test.js",
+    "render-example": "node bin/plinth-sketch.js examples/plinth.sketch"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
