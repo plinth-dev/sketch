@@ -17,12 +17,29 @@ test("parses a node without sublabel", () => {
 test("parses a labelled edge", () => {
   const r = parse(`@layer Test\na : A\nb : B\na -> b : http`);
   assert.equal(r.edges.length, 1);
-  assert.deepEqual(r.edges[0], { from: "a", to: "b", label: "http" });
+  assert.equal(r.edges[0].from, "a");
+  assert.equal(r.edges[0].to, "b");
+  assert.equal(r.edges[0].label, "http");
 });
 
 test("parses an unlabelled edge", () => {
   const r = parse(`@layer Test\na : A\nb : B\na -> b`);
   assert.equal(r.edges[0].label, null);
+});
+
+test("edges to undefined nodes surface as warnings", () => {
+  const r = parse(`@layer T\na : A\na -> ghost`);
+  assert.equal(r.errors.length, 0);
+  assert.ok(r.warnings.length > 0);
+  const w = r.warnings.find((w) => w.kind === "undefined-nodes");
+  assert.ok(w, "expected an undefined-nodes warning");
+  assert.deepEqual(w.ids, ["ghost"]);
+});
+
+test("self-loop edges surface as warnings", () => {
+  const r = parse(`@layer T\na : A\na -> a`);
+  const w = r.warnings.find((w) => w.kind === "self-loop");
+  assert.ok(w, "expected a self-loop warning");
 });
 
 test("ignores comments and blank lines", () => {

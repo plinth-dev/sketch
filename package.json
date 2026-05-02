@@ -1,6 +1,6 @@
 {
   "name": "@plinth-dev/sketch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Render Plinth Sketch DSL files to typeset SVG architecture diagrams. Drop the DSL in your repo, render at build time, embed the SVG in your README.",
   "license": "MIT",
   "type": "module",
