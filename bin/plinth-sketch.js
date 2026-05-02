@@ -58,7 +58,16 @@ function parseArgs(argv) {
     if (a === "-w" || a === "--watch") { args.watch = true; continue; }
     if (a === "--check") { args.check = true; continue; }
     if (a === "--no-signature") { args.signature = false; continue; }
-    if (a === "-o" || a === "--out") { args.out = argv[++i]; continue; }
+    if (a === "-o" || a === "--out") {
+      const next = argv[i + 1];
+      if (next === undefined || (next.startsWith("-") && next !== "-")) {
+        console.error(`plinth-sketch: ${a} requires a value (file path or '-' for stdout)`);
+        process.exit(2);
+      }
+      args.out = next;
+      i++;
+      continue;
+    }
     if (a.startsWith("-") && a.length > 1 && a !== "-") {
       console.error(`plinth-sketch: unknown option: ${a}`);
       process.exit(2);
@@ -94,22 +103,20 @@ function emitSvg(dsl, args) {
   const lay = layout(parsed);
   const svg = render(parsed, lay, { signature: args.signature });
 
-  // Surface parse warnings on stderr (don't fail unless --check).
+  // Surface parse errors (unparsed lines) and warnings (undefined-node edges,
+  // self-loops) on stderr. --check will fail on either; default render won't.
   if (parsed.errors.length) {
     for (const err of parsed.errors) {
-      console.error(`plinth-sketch: warning: line ${err.line}: cannot parse: ${err.text}`);
+      console.error(`plinth-sketch: error: line ${err.line}: cannot parse: ${err.text}`);
     }
   }
-  const missing = new Set();
-  for (const e of parsed.edges) {
-    if (!parsed.nodes[e.from]) missing.add(e.from);
-    if (!parsed.nodes[e.to]) missing.add(e.to);
-  }
-  if (missing.size) {
-    console.error(`plinth-sketch: warning: edge references undefined nodes: ${[...missing].join(", ")}`);
+  const warnings = parsed.warnings || [];
+  for (const w of warnings) {
+    const where = w.line ? `line ${w.line}: ` : "";
+    console.error(`plinth-sketch: warning: ${where}${w.message}`);
   }
 
-  const hasErrors = parsed.errors.length > 0 || missing.size > 0;
+  const hasErrors = parsed.errors.length > 0 || warnings.length > 0;
   return { svg, hasErrors };
 }
 

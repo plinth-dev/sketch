@@ -14,10 +14,9 @@ const NODE_H = 64;
 const NODE_GAP_X = 32;
 const NODE_MIN_W = 140;
 const TOTAL_W_DEFAULT = 960;
-const TOTAL_W_MAX = 1600;
-
 export function layout(parsed) {
   // First pass: figure out the canvas width we need to honour NODE_MIN_W.
+  // No upper cap — clipping nodes off-canvas is worse than a wide diagram.
   let canvasW = TOTAL_W_DEFAULT;
   for (const layer of parsed.layers) {
     if (!layer.ids.length) continue;
@@ -25,7 +24,7 @@ export function layout(parsed) {
     const totalGap = NODE_GAP_X * (n - 1);
     const neededInner = LAYER_INTERNAL_PAD_X * 2 + totalGap + NODE_MIN_W * n;
     const neededTotal = neededInner + PADDING_X * 2;
-    if (neededTotal > canvasW) canvasW = Math.min(neededTotal, TOTAL_W_MAX);
+    if (neededTotal > canvasW) canvasW = neededTotal;
   }
 
   const innerW = canvasW - PADDING_X * 2;
