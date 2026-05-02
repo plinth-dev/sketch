@@ -188,4 +188,4 @@ The DSL is also deliberately tiny — six syntactic forms, line-based, no nestin
 
 ## License
 
-MIT.
+MIT — see [LICENSE](./LICENSE).
